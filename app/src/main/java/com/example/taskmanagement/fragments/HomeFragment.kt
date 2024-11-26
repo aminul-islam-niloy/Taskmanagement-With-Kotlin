@@ -144,6 +144,7 @@ class HomeFragment : Fragment(), AddTaskManagementPopUpFragment.DialogNextBtnCli
                             )
                         }
 
+
                         mList.add(taskData)
                     }
                 }
