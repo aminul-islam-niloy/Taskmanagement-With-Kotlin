@@ -54,6 +54,7 @@ android {
         implementation("com.google.firebase:firebase-auth-ktx")
         implementation("com.google.firebase:firebase-messaging")
         implementation("androidx.work:work-runtime-ktx:2.8.1")
+        implementation ("androidx.core:core-ktx:1.10.1")
 
         val nav_version = "2.8.3"
         implementation("androidx.navigation:navigation-fragment-ktx:$nav_version")

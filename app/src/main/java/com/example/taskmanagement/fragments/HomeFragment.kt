@@ -1,5 +1,6 @@
 package com.example.taskmanagement.fragments
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -13,7 +14,8 @@ import androidx.navigation.Navigation
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.taskmanagement.R
 import com.example.taskmanagement.databinding.FragmentHomeBinding
-import com.example.taskmanagement.notifications.NotificationWorker
+import com.example.taskmanagement.notifications.BackgroundService
+import com.example.taskmanagement.notifications.NotificationHelper
 import com.example.taskmanagement.utils.TaskManagementAdapter
 import com.example.taskmanagement.utils.TaskManagementData
 import com.google.android.material.textfield.TextInputEditText
@@ -45,10 +47,16 @@ class HomeFragment : Fragment(), AddTaskManagementPopUpFragment.DialogNextBtnCli
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // Start the BackgroundService
+        val intent = Intent(requireContext(), BackgroundService::class.java)
+        requireContext().startService(intent)
+
+        // Initialize the fragment components
         init(view)
         getDataFromFirebase()
         registerEvents()
     }
+
 
     private fun registerEvents() {
         binding.addBtnHome.setOnClickListener {
@@ -82,15 +90,23 @@ class HomeFragment : Fragment(), AddTaskManagementPopUpFragment.DialogNextBtnCli
         binding.recyclerView.adapter = adapter
     }
 
+
+
 //    private fun getDataFromFirebase() {
 //        databaseRef.addValueEventListener(object : ValueEventListener {
 //            override fun onDataChange(snapshot: DataSnapshot) {
 //                mList.clear()
+//                val currentDateTime = System.currentTimeMillis()
+//
 //                for (taskSnapshot in snapshot.children) {
 //                    val taskData = taskSnapshot.getValue(TaskManagementData::class.java)
 //                    if (taskData != null) {
-//                        mList.add(taskData)
+//                        // Parse task endDateTime
+//                        val taskEndDateTime = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+//                            .parse(taskData.endDateTime)?.time ?: 0L
 //
+//
+//                        mList.add(taskData)
 //                    }
 //                }
 //                adapter.notifyDataSetChanged()
@@ -103,10 +119,13 @@ class HomeFragment : Fragment(), AddTaskManagementPopUpFragment.DialogNextBtnCli
 //    }
 
 
+
     private fun getDataFromFirebase() {
         databaseRef.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 mList.clear()
+
+                val notificationHelper = NotificationHelper(requireContext())
                 val currentDateTime = System.currentTimeMillis()
 
                 for (taskSnapshot in snapshot.children) {
@@ -116,6 +135,14 @@ class HomeFragment : Fragment(), AddTaskManagementPopUpFragment.DialogNextBtnCli
                         val taskEndDateTime = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
                             .parse(taskData.endDateTime)?.time ?: 0L
 
+                        // Check if task's endDateTime matches current time (to the nearest minute)
+                        if (taskEndDateTime in (currentDateTime..currentDateTime + 60000)) {
+                            // Trigger notification for the task
+                            notificationHelper.sendNotification(
+                                taskData.task,
+                                "Task deadline is now: ${taskData.endDateTime}"
+                            )
+                        }
 
                         mList.add(taskData)
                     }
